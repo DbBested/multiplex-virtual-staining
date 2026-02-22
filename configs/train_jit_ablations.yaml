@@ -1,0 +1,38 @@
+# Ablation training configurations for JiT
+# Each ablation modifies specific hyperparameters from the base train_jit.yaml
+# All ablations use the same data, training steps, and seed for fair comparison
+#
+# Usage: These overrides are applied via Hydra CLI in the slurm job array script.
+#   sbatch slurm/train_jit_ablations.sbatch
+#
+# Reference:
+#   Phase 26 Plan 05: Ablation Training Infrastructure
+#   Base config: configs/train_jit.yaml
+
+base_config: train_jit  # Base Hydra config name
+
+ablations:
+  - name: "full"
+    description: "Full model with all components (production config, no overrides)"
+    overrides: ""
+    run_name: "jit_full"
+
+  - name: "no_markergnn"
+    description: "Without graph neural network for marker relationships"
+    overrides: "use_marker_gnn=false"
+    run_name: "jit_no_markergnn"
+
+  - name: "no_bioloss"
+    description: "Without biological consistency losses"
+    overrides: "lambda_bio=0.0"
+    run_name: "jit_no_bioloss"
+
+  - name: "no_lpips"
+    description: "Without LPIPS perceptual loss"
+    overrides: "lambda_lpips=0.0"
+    run_name: "jit_no_lpips"
+
+  - name: "minimal"
+    description: "Bare flow matching baseline (no MarkerGNN, no BioLoss, no LPIPS)"
+    overrides: "use_marker_gnn=false lambda_bio=0.0 lambda_lpips=0.0"
+    run_name: "jit_minimal"

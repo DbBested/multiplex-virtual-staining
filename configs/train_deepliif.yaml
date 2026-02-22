@@ -1,0 +1,84 @@
+# DeepLIIF training configuration
+#
+# Usage:
+#   python scripts/train_deepliif.py experiment_name=v3_baseline
+#   python scripts/train_deepliif.py experiment_name=v3_attention use_cross_stain_attention=true
+#
+
+defaults:
+  - _self_
+
+# Experiment identification
+experiment_name: ???  # Required
+
+# Reproducibility
+seed: 42
+
+# Training schedule
+max_epochs: 100
+warmup_epochs: 5
+
+# Optimizer (pix2pix defaults)
+lr: 0.0002
+betas: [0.5, 0.999]
+
+# Loss weights
+lambda_l1: 100.0
+lambda_perc: 10.0
+lambda_gan: 1.0
+label_smoothing: 0.0
+
+# Biological constraints (optional)
+lambda_bio: 0.0
+
+# Data loading
+batch_size: 8  # per GPU - DeepLIIF images are 512x512
+num_workers: 8
+image_size: 512
+
+# Mixed precision
+use_bf16: true
+
+# Checkpointing - only keep best to save storage
+checkpoint_dir: ${oc.env:SCRATCH,/tmp}/checkpoints
+checkpoint_every_n_epochs: 10
+keep_n_checkpoints: 1
+
+# Logging
+wandb_project: multiplex-deepliif
+log_every_n_steps: 50
+sample_every_n_steps: 200
+num_samples: 4
+
+# Distributed training
+distributed: true
+
+# Model architecture
+# use_attention=false → pix2pix (v1), standard U-Net
+# use_attention=true → v2/v3, attention-gated decoder
+use_attention: true
+
+# Cross-stain attention (Phase 17 - input fusion)
+use_cross_stain_attention: false
+csa_embed_dim: 64
+csa_num_heads: 4
+csa_dropout: 0.1
+csa_use_gated_fusion: true
+
+# Cross-marker attention (output consistency)
+use_cross_marker_attention: false
+cma_stage1_enabled: true
+cma_stage1_embed_dim: 1024
+cma_stage1_num_heads: 8
+cma_stage1_dropout: 0.1
+cma_stage2_enabled: true
+cma_stage2_hidden_dim: 64
+cma_stage2_num_heads: 4
+cma_stage2_dropout: 0.1
+
+# PatchNCE (contrastive loss for misalignment robustness)
+use_patchnce: false
+nce_layers: [0, 2]
+nce_t: 0.07
+num_patches: 256
+lambda_nce: 1.0

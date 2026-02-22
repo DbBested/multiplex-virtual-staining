@@ -1,0 +1,128 @@
+defaults:
+  - _self_
+
+experiment_name: jit-flow-matching
+
+# Model (ConditionalJiT - from Phase 20)
+img_size: 512
+patch_size: 32
+in_chans: 3
+out_chans: 3
+hidden_size: 768
+depth: 12
+num_heads: 12
+mlp_ratio: 4.0
+freeze_encoder: true
+
+# Optimizer (DiT/SiT recipe)
+lr: 1.0e-4
+betas: [0.9, 0.999]
+weight_decay: 0.0
+grad_clip: 1.0
+
+# Flow matching
+prediction: x_prediction
+timestep_dist: logit_normal
+timestep_mean: 0.0
+timestep_std: 1.0
+
+# Loss type: "mse" (original) or "l1" (v6.0 fix for dynamic range compression)
+loss_type: l1
+
+# EMA
+ema_decay: 0.9999
+
+# Training
+max_steps: 250000
+batch_size: 4
+num_workers: 4
+
+# Sampling / Evaluation
+euler_steps: 50
+heun_steps: 25
+eval_every_n_steps: 5000
+sample_every_n_steps: 10000
+
+# Mixed precision
+use_bf16: true
+
+# Checkpointing
+checkpoint_dir: checkpoints/jit
+checkpoint_every_n_steps: 25000
+keep_n_checkpoints: 1
+resume_from: null
+
+# Logging
+wandb_project: multiplex-jit
+wandb_entity: null
+log_every_n_steps: 50
+num_samples: 4
+
+# Data
+data_root: data/deepliif
+train_split: train
+val_split: val
+target_channels:
+  - DAPI
+  - Lap2
+  - Marker
+
+# Conditioning / Modality Dropout
+p_ihc_only: 0.3       # Probability of IHC-only mode (H channel dropped)
+p_ihc_h: 0.4          # Probability of IHC+H mode (all channels kept)
+# Remaining probability (0.3) = full mode (config=2, same as IHC+H)
+per_channel_eval: true  # Log per-channel PSNR/SSIM/LPIPS for DAPI, Lap2, Marker
+
+# MarkerGNN (Phase 23: GNN-01 through GNN-04)
+use_marker_gnn: true
+marker_gnn_node_dim: 192    # Per-node feature dimension (hidden_size // 4)
+marker_gnn_heads: 4          # Attention heads per GATv2 layer
+marker_gnn_layers: 2         # Number of GNN message passing layers
+marker_gnn_dropout: 0.1      # Dropout in GNN layers
+marker_gnn_bio_prior: true   # Initialize edge weights with biological priors
+
+# Perceptual losses (PixelGen recipe -- applied at all timesteps, no gating)
+lambda_lpips: 0.1              # LPIPS weight (v6.0: 0.1 matches V3 GAN LPIPS/recon ratio)
+lambda_pdino: 0.0              # P-DINO weight (0 = disabled). DINOv2 patch cosine distance
+
+# DDP configuration
+ddp_static_graph: true    # Use static_graph optimization (disable when unfreezing encoder or using adversarial)
+
+# Gradient checkpointing (Phase 25: TRAIN-03)
+gradient_checkpointing: false   # Enable for multi-GPU / larger batches
+
+# BioLoss Suite (Phase 24: BIO-01, BIO-02, BIO-03)
+lambda_bio: 0.05              # Global bio loss weight (0 = disabled)
+bio_enable_nuclear: true       # BIO-01: Lap2 subset dilate(DAPI)
+bio_enable_coherence: true     # BIO-02: H-DAPI Pearson correlation
+bio_weight_nuclear: 1.0        # Relative weight for nuclear consistency
+bio_weight_coherence: 1.0      # Relative weight for spatial coherence
+bio_t_threshold: 0.3           # Noise-gating: only apply when t > this
+bio_dilation_kernel: 7         # Kernel size for DAPI dilation
+bio_nuclear_threshold: 0.3     # Soft threshold for DAPI binarization
+bio_nuclear_temperature: 10.0  # Sigmoid sharpness for DAPI threshold
+bio_use_gt_dapi: true          # Use GT DAPI for nuclear mask (more stable)
+bio_use_distance_weighting: true  # Distance-weighted penalty
+bio_margin_pixels: 10          # Distance margin for penalty ramp
+
+# Unpatchify initialization
+nonzero_init: false   # Small random init for unpatchify (useful for velocity prediction)
+
+# CNN decoder (replaces linear unpatchify with progressive CNN upsample)
+use_conv_upsample: false  # Bilinear+conv decoder for spatial info sharing across patches
+use_cnn_decoder: false  # Progressive CNN decoder (PixelShuffle) for finer spatial detail
+
+# Bridge matching (source→target flow instead of noise→target)
+use_bridge: false       # Start ODE from source projection, not noise
+bridge_sigma: 0.1       # Noise scale for bridge interpolation
+
+# Adversarial training (PatchGAN70 discriminator on x1_hat)
+lambda_adv: 0.0           # Adversarial loss weight (0 = disabled)
+disc_lr: 2.0e-4           # Discriminator learning rate
+adv_warmup_steps: 5000    # Pure flow matching warmup before enabling D
+adv_t_threshold: 0.5      # Only apply adv loss when t > this (noise gating)
+r1_gamma: 0.05            # R1 gradient penalty weight
+r1_interval: 16           # Apply R1 every N steps (lazy regularization)
+
+# Reproducibility
+seed: 42

@@ -1,0 +1,44 @@
+# Data and outputs
+data/
+checkpoints/
+logs/
+results/
+samples/
+outputs/
+slides/
+
+# Planning / internal
+.planning/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# W&B
+wandb/
